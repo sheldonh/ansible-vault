@@ -1,0 +1,14 @@
+backend "consul" {
+  address = "127.0.0.1:8500"
+  path = "vault"
+}
+
+listener "tcp" {
+  address = "0.0.0.0:8200"
+{% if vault_tls_cert is defined %}
+  tls_cert_file = "{{ vault_cert_file }}"
+  tls_key_file = "{{ vault_key_file }}"
+{% else %}
+  tls_disable = 1
+{% endif %}
+}

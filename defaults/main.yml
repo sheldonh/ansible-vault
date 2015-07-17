@@ -1,0 +1,17 @@
+---
+vault_version: 0.2.0
+vault_archive: "vault_{{ vault_version }}_linux_amd64.zip"
+vault_download: "https://dl.bintray.com/mitchellh/vault/{{ vault_archive }}"
+vault_download_folder: /tmp
+
+vault_home: /opt/vault
+vault_config_dir: /etc/vault.d
+vault_config_file: /etc/vault.d/50-main.hcl
+vault_log_file: /var/log/vault
+vault_data_dir: "{{ vault_home }}/data"
+
+vault_user: vault
+vault_group: vault
+
+vault_key_file: /opt/vault/cert/key.pem
+vault_cert_file: /opt/vault/cert/cert.pem

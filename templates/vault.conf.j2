@@ -1,0 +1,20 @@
+# Vault Server (Upstart unit)
+description "Vault Server"
+
+start on (local-filesystems and net-device-up IFACE!=lo)
+stop on runlevel [016]
+
+script
+
+# Make sure to use all our CPUs, because Vault can block a scheduler thread
+export GOMAXPROCS=`nproc`
+
+exec sudo -u {{ vault_user }} -g {{ vault_group }} {{ vault_home }}/bin/vault server \
+  -config {{ vault_config_dir }} \
+  >> {{ vault_log_file }} 2>&1
+end script
+
+respawn
+respawn limit 10 10
+
+kill timeout 10

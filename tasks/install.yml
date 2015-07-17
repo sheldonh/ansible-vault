@@ -1,0 +1,96 @@
+---
+- name: update apt
+  apt: >
+    update_cache=yes
+    cache_valid_time=3600
+
+- name: install deps
+  apt: >
+    pkg={{item}}
+    state=installed
+  with_items:
+    - unzip
+    - jq
+
+- name: download vault
+  get_url: >
+    url={{vault_download}}
+    dest={{vault_download_folder}}
+  register: vault_was_downloaded
+
+- name: create vault group
+  group: >
+    name={{vault_group}}
+    state=present
+
+- name: create vault user
+  user: >
+    name={{vault_user}}
+    group={{vault_group}}
+
+- name: create vault directory
+  file: >
+    state=directory
+    path={{ item }}
+    owner=root
+    group={{vault_group}}
+  with_items:
+    - "{{ vault_home }}"
+    - "{{ vault_home }}/bin"
+    - "{{ vault_home }}/cert"
+    - "{{ vault_data_dir }}"
+    - "{{ vault_config_dir }}"
+
+- name: copy and unpack
+  unarchive: >
+    src={{ vault_download_folder }}/{{ vault_archive }}
+    dest={{ vault_home }}/bin
+    copy=no
+  when: vault_was_downloaded|changed
+
+-
+  name: allow mlock syscall
+  command: /sbin/setcap "cap_ipc_lock=+ep" "{{ vault_home }}/bin/vault"
+
+- name: create TLS key
+  no_log: True
+  copy: content="{{ vault_tls_key }}" dest="{{ vault_key_file }}" owner=root group={{vault_group}} mode=0640
+  when: vault_tls_key is defined
+
+- name: create TLS cert
+  no_log: True
+  copy: content="{{ vault_tls_cert }}" dest="{{ vault_cert_file }}" owner=root group={{vault_group}} mode=0644
+  when: vault_tls_cert is defined
+
+- name: set ownership
+  file: >
+    state=directory
+    path={{vault_data_dir}}
+    owner={{vault_user}}
+    group={{vault_group}}
+    recurse=yes
+  when: vault_was_downloaded|changed
+
+- name: copy vault upstart script
+  template: >
+    src=vault.conf.j2
+    dest=/etc/init/vault.conf
+    owner={{vault_user}}
+    group={{vault_group}}
+    mode=0755
+
+- name: add vault to path through profile.d
+  template: >
+    src=vault.sh.j2
+    dest=/etc/profile.d/vault.sh
+    owner=root
+    group=root
+    mode=0755
+
+- name: vault config file
+  template: >
+    src=vault.hcl.j2
+    dest={{ vault_config_file }}
+    owner={{vault_user}}
+    group={{vault_group}}
+    mode=0755

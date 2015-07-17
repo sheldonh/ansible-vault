@@ -1,0 +1,7 @@
+export PATH={{ vault_home }}/bin:${PATH}
+export VAULT_HOME={{ vault_home }}
+{% if vault_tls_cert is defined %}
+export VAULT_ADDR=https://$(hostname --fqdn):8200
+{% else %}
+export VAULT_ADDR=http://127.0.0.1:8200
+{% endif %}
